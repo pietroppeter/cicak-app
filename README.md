@@ -5,8 +5,9 @@ predefined cells to a live Nim process and see what runs and how long it takes.
 Built with [Mummy](https://github.com/guzba/mummy), deployed with [Disco](https://disco.cloud),
 in cicak's green theme. Planned home: <https://cicak.pietroppeter.xyz>.
 
-Visitors never type code. They pick a **notebook** (a file in [`notebooks/`](notebooks)),
-then add its cells one at a time, choosing:
+Visitors never type code. Each **notebook** (a file in [`notebooks/`](notebooks)) is a
+tab with its own session: add its next cell, or restart it. Switching tabs keeps the
+results. The **mode** is a 2×2 grid (🦎 marks the selected square), per tab:
 
 - the **compiler**: `nim c`, or `nim ic` (incremental compilation)
 - how cells **run**: *hot reload* (one host process stays alive; a new cell is compiled
@@ -20,8 +21,8 @@ cicak's [experiments/hcr-ic](https://github.com/pietroppeter/cicak/tree/main/exp
 Start the server with `CICAK_TRY_HCR_IC=1` to try it anyway, e.g. on a newer Nim.
 
 Each added cell shows its output and the time of each step (compile, reload or run).
-The **log** lists every command with its duration and output. **Restart** starts over;
-changing notebook, compiler or strategy restarts too.
+The **log** lists every command with its duration and output. **Restart** starts the tab over;
+changing the mode restarts the tab too (after asking, if it has cells).
 
 This is the mechanism of cicak's
 [hot code reloading proof of concept](https://pietroppeter.github.io/cicak/blog/2026-10-31-hcr-poc.html),
@@ -44,7 +45,7 @@ executable can't be overwritten, the cell libraries are what matter) and sends
 | `GET /health` | `ok` |
 
 Sessions live on the server (a directory per session under `WORK_DIR`, plus the host
-process). One build or run happens at a time; at most 6 sessions, idle ones end after
+process). One build or run happens at a time; at most 12 sessions (a visitor has one per notebook tab), idle ones end after
 20 minutes.
 
 ## Notebooks

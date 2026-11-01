@@ -61,7 +61,7 @@ while stdin.readLine(line):
     stdout.flushFile
 """ % Marker
   ProgSource = "import cells\n"
-  MaxSessions = 6
+  MaxSessions = 12     # a visitor has one per notebook tab
   IdleTimeout = initDuration(minutes = 20)
   CompileTimeoutS = 180
   RunTimeoutS = 20

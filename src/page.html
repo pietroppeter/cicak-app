@@ -37,13 +37,14 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 body > header, body > main, body > footer { max-width: 46rem; margin: 0 auto; }
-body > header { padding-block: 3rem 0; }
+body > header { padding-block: 1.25rem 0; }
 body > footer { padding-block: 1rem 4rem; }
-.mast { display: grid; gap: .6rem; padding-bottom: 2rem; border-bottom: 1px solid var(--rule); margin-bottom: 1rem; }
+.mast { display: grid; gap: .45rem; padding-bottom: 1rem; border-bottom: 1px solid var(--rule); margin-bottom: 1rem; }
 .eyebrow { font: 600 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--moss); }
-.mast h1 { font: 700 clamp(2.4rem, 7vw, 3.6rem)/1.02 var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.mast h1 { font: 700 clamp(1.7rem, 6vw, 2.8rem)/1.05 var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
 .mast h1 em { font-style: normal; color: var(--moss); }
-.epigraph { font-style: italic; color: var(--mute); margin: 0; }
+.epigraph { font-style: italic; color: var(--mute); margin: 0; font-size: .95rem; line-height: 1.5; }
+.epigraph .meta { display: block; font-style: normal; margin-top: .2rem; }
 .meta { font: .8rem/1.4 var(--mono); color: var(--mute); }
 h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; }
 h2 { font-size: 1.7rem; font-weight: 700; margin: 2.8rem 0 .6rem; letter-spacing: -.01em; }
@@ -88,25 +89,37 @@ button:focus-visible { outline: 2px solid var(--moss); outline-offset: 2px; }
 .matrix button.sq[aria-checked="true"] { border: 2.5px solid var(--moss); background: var(--out-bg); }
 .matrix button.sq.na { cursor: not-allowed; opacity: 1; color: #fff; font: 700 .65rem/1 var(--mono);
   background: #b3261e; border-color: #b3261e; }
+/* Notebook tabs: each tab keeps its own session. */
+.tabs-label { margin-top: 1.6rem; }
+.tabs { display: flex; gap: .3rem; overflow-x: auto; border-bottom: 1px solid var(--rule); margin-top: .4rem; scrollbar-width: none; }
+.tabs button { flex: none; font: 600 .78rem/1.2 var(--mono); padding: .65rem .8rem; min-height: 2.75rem; cursor: pointer;
+  background: none; color: var(--mute); border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--leaf); border-color: var(--rule); border-bottom: 1px solid var(--leaf); }
+.tabs .count { display: inline-block; min-width: 1.3em; padding: .1em .35em; border-radius: 999px; background: var(--moss); color: var(--ground); font-size: .65rem; text-align: center; }
+.panel { padding-top: .2rem; }
+.later { font: .75rem/1.5 var(--mono); color: var(--mute); margin: .5rem 0 0; }
 .hint { font: .78rem/1.5 var(--mono); color: var(--mute); margin: 0; }
-.about { color: var(--mute); margin: .3rem 0 0; }
+.about { color: var(--mute); margin: .8rem 0 0; font-size: .95rem; line-height: 1.5; }
 .cell { margin: 1.2rem 0 0; }
 .cell .head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .3rem; }
 .cell .title { font: 700 1rem/1.3 var(--display); }
-.code { background: var(--leaf); border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1rem; font-size: .85rem; line-height: 1.55; }
+.code { background: var(--leaf); border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1rem; font-size: .85rem; line-height: 1.55;
+  white-space: pre-wrap; overflow-wrap: anywhere; }
 .cell.done .code { border-radius: 6px 6px 0 0; }
 .out { background: var(--out-bg); border: 1px solid var(--rule); border-top: none; border-radius: 0 0 6px 6px;
   padding: .8rem 1rem; font: .8rem/1.4 var(--mono); white-space: pre-wrap; word-break: break-word; }
 .out.err { color: var(--err); }
 .timing { font: .72rem/1.4 var(--mono); color: var(--mute); margin-top: .35rem; font-variant-numeric: tabular-nums; }
 .timing b { color: var(--moss); font-weight: 600; }
+.timing .step { white-space: nowrap; }
 .next .code { border-style: dashed; }
-.next .row { display: flex; justify-content: flex-end; margin-top: .45rem; }
+.next .row, #next > .row { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-top: .45rem; }
+.next .row .primary { margin-left: auto; }
 .empty { color: var(--mute); font-style: italic; }
 .busy { font: .8rem/1.4 var(--mono); color: var(--moss); margin: 1rem 0; }
 .busy::before { content: "● "; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: .2; } }
-details.log { margin-top: 2.5rem; }
+details.log { margin-top: 2rem; }
 details.log summary { cursor: pointer; width: max-content; font: 600 .75rem/1 var(--mono); letter-spacing: .06em;
   text-transform: uppercase; color: var(--moss); padding: .6rem .8rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--leaf); }
 .log ol { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .6rem; }
@@ -120,23 +133,22 @@ details.log summary { cursor: pointer; width: max-content; font: 600 .75rem/1 va
   <nav class="crumbs"><a href="https://pietroppeter.github.io/cicak/">cicak dev log ↗</a><a href="https://github.com/pietroppeter/cicak-app">source on GitHub ↗</a></nav>
   <span class="eyebrow">cicak 🦎 playground</span>
   <h1>Add <em>cells</em> to a running Nim process</h1>
-  <p class="epigraph">Pick cells from a notebook, one at a time. Each cell becomes a Nim module; see how long it takes and what runs.</p>
-  <span class="meta" id="meta">loading…</span>
+  <p class="epigraph">Each cell becomes a Nim module: see how long it takes and what runs. <span class="meta" id="meta">loading…</span></p>
 </header>
 <main>
   <section class="controls">
     <div class="control"><span class="label">Mode</span>
       <div class="matrix" id="mode" role="radiogroup" aria-label="compiler and how cells run"></div>
       <p class="hint" id="strategy-hint"></p></div>
-    <div class="control"><div class="seg"><button class="btn" id="restart">Restart</button></div></div>
   </section>
-  <h2>Session</h2>
-  <div id="session"><p class="empty">No cells yet. Add one below.</p></div>
-  <div id="busy"></div>
-  <h2>Cells to add</h2>
-  <div class="control"><span class="label">Notebook</span><div class="seg" id="notebooks"></div></div>
-  <p class="about" id="about"></p>
-  <div id="next"></div>
+  <div class="label tabs-label">Notebook</div>
+  <nav class="tabs" id="notebooks" role="tablist"></nav>
+  <section class="panel" role="tabpanel">
+    <p class="about" id="about"></p>
+    <div id="session"></div>
+    <div id="busy"></div>
+    <div id="next"></div>
+  </section>
   <details class="log" id="log"><summary>Log</summary><ol id="log-list"></ol></details>
 </main>
 <footer><div class="foot">Part of <a href="https://github.com/pietroppeter/cicak">cicak</a>, a REPL for Nim.
