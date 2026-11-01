@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  NIM_BRANCH: version-2-4
+  NIM_DIR: ${{ github.workspace }}/../nim
+
+jobs:
+  # Builds the app with Nim 2.4 (from source, as in cicak's CI: the 2.4.0 release
+  # binaries lack nifler, which `nim ic` needs), starts it and adds cells in every
+  # compiler/strategy combination.
+  e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - id: nim-sha
+        run: echo "sha=$(git ls-remote https://github.com/nim-lang/Nim refs/heads/$NIM_BRANCH | cut -f1)" >> "$GITHUB_OUTPUT"
+      - id: nim-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NIM_DIR }}
+          key: nim-${{ runner.os }}-${{ runner.arch }}-${{ steps.nim-sha.outputs.sha }}
+      - name: Build Nim, nifler and nifmake
+        if: steps.nim-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$NIM_BRANCH" https://github.com/nim-lang/Nim "$NIM_DIR"
+          cd "$NIM_DIR"
+          . config/build_config.txt
+          git clone -q "$nim_csourcesUrl" "$nim_csourcesDir"
+          git -C "$nim_csourcesDir" checkout -q "$nim_csourcesHash"
+          make -C "$nim_csourcesDir" -j"$(nproc)"
+          ./bin/nim c --hints:off --skipUserCfg --skipParentCfg koch
+          ./koch boot -d:release --skipUserCfg --skipParentCfg
+          rm -rf "$nim_csourcesDir"
+      - run: echo "$NIM_DIR/bin" >> "$GITHUB_PATH"
+      - run: nim -v && ls "$NIM_DIR/bin"
+      - run: ./deps.sh
+      - name: Build
+        run: nim c -d:release --hints:off -o:cicak_app src/cicak_app.nim
+      - name: Cells run in every mode
+        run: |
+          WORK_DIR="$RUNNER_TEMP/work" ./cicak_app > app.log 2>&1 &
+          sleep 2
+          python3 tests/e2e.py
+      - if: always()
+        run: cat app.log
+
+  # The image Disco builds: Nim 2.4 from source, the app, the notebooks.
+  docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cicak-app
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Cells run in the container
+        run: |
+          docker run -d -p 8000:8000 --name app cicak-app
+          sleep 3
+          python3 tests/e2e.py
+      - if: always()
+        run: docker logs app

@@ -1,0 +1,6 @@
+nimcache/
+/cicak_app
+/src/cicak_app/cicak_app
+/work/
+*.out
+/deps/
