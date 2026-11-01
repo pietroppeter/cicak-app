@@ -97,7 +97,9 @@ proc clip(s: string): string =
 proc run(name, cmd, dir: string, timeoutS: int, env: StringTableRef = nil): Step =
   ## Runs a shell command in `dir` with a time limit and records it.
   let t0 = getMonoTime()
-  let full = "timeout " & $timeoutS & " " & cmd
+  # coreutils' timeout (gtimeout on macOS with Homebrew coreutils); without it, no limit
+  let timeoutExe = if findExe("timeout").len > 0: "timeout" elif findExe("gtimeout").len > 0: "gtimeout" else: ""
+  let full = if timeoutExe.len > 0: timeoutExe & " " & $timeoutS & " " & cmd else: cmd
   let p = startProcess("/bin/sh", workingDir = dir, args = ["-c", full], env = env,
                        options = {poStdErrToStdOut})
   let output = p.outputStream.readAll
@@ -111,17 +113,20 @@ proc run(name, cmd, dir: string, timeoutS: int, env: StringTableRef = nil): Step
 proc hostEnv(): StringTableRef =
   result = newStringTable(modeCaseSensitive)
   for k, v in envPairs(): result[k] = v
-  result["LD_LIBRARY_PATH"] = rtlDir() & (if existsEnv("LD_LIBRARY_PATH"): ":" & getEnv("LD_LIBRARY_PATH") else: "")
+  let v = when defined(macosx): "DYLD_LIBRARY_PATH" else: "LD_LIBRARY_PATH"
+  result[v] = rtlDir() & (if existsEnv(v): ":" & getEnv(v) else: "")
 
 proc ensureRtl(steps: var seq[Step]): bool =
   ## Builds the two runtime libraries hot code reloading needs, once.
   let dir = rtlDir()
-  if fileExists(dir / "libnimhcr.so") and fileExists(dir / "libnimrtl.so"): return true
+  # libnimrtl.so on Linux, libnimrtl.dylib on macOS
+  let (rtl, hcr) = (DynlibFormat % "nimrtl", DynlibFormat % "nimhcr")
+  if fileExists(dir / hcr) and fileExists(dir / rtl): return true
   createDir(dir)
-  for (name, lib, def) in [("build libnimrtl.so", "nimrtl", "createNimRtl"),
-                           ("build libnimhcr.so", "nimhcr", "createNimHcr")]:
+  for (name, lib, def) in [("build " & rtl, "nimrtl", "createNimRtl"),
+                           ("build " & hcr, "nimhcr", "createNimHcr")]:
     let s = run(name, nimExe & " c " & NimFlags & " --app:lib -d:" & def &
-                " --nimcache:nimcache_" & lib & " --out:lib" & lib & ".so " &
+                " --nimcache:nimcache_" & lib & " --out:" & (DynlibFormat % lib) & " " &
                 quoteShell(nimLib() / lib & ".nim"), dir, CompileTimeoutS)
     steps.add s
     if not s.ok: return false

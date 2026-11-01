@@ -84,6 +84,29 @@ Environment: `PORT` (8000), `WORK_DIR` (session files), `NOTEBOOKS_DIR` (next to
 binary), `RTL_DIR` (where `libnimrtl.so` and `libnimhcr.so` are; built on first use if missing),
 `NIM` (the compiler).
 
+## Platforms and hot code reloading
+
+Hot reload needs a jump table for the CPU in Nim's HCR runtime (`lib/nimhcr.nim`).
+On Nim's `version-2-4` branch (November 2026):
+
+| Platform | Hot reload |
+|---|---|
+| Linux x86-64 (CI, the Disco server) | works |
+| macOS arm64 (native) | supported by Nim since [#26444](https://github.com/nim-lang/Nim/pull/26444); untested here |
+| Linux arm64 with musl (Alpine) | supported with `-d:musl` |
+| Linux arm64 with glibc (Debian, so Docker on Apple Silicon) | **not yet**: `Error: hot code reloading has no jump table for arm64 on linux` |
+
+The last row is a known, temporary limitation: the arm64 jump table came with
+Nim's Alpine CI ([#26302](https://github.com/nim-lang/Nim/pull/26302)) and was enabled
+only for musl and macOS, although nothing in it depends on the C library. The open PR
+[nim-lang/Nim#26581](https://github.com/nim-lang/Nim/pull/26581) (opened 2026-10-29)
+enables it on glibc too; its author reports all HCR tests passing on Debian 12 arm64.
+
+Until it is merged, the image still builds on arm64 (the runtime library build is
+allowed to fail, and the page shows the error when hot reload is picked), re-run
+modes work, and `docker build --platform linux/amd64` (with Rosetta enabled in
+Docker/Rancher Desktop, otherwise very slow) gives the full app.
+
 ## Deploy
 
 `Dockerfile` + `disco.json`, as in [disco-nim-mummy](https://github.com/pietroppeter/disco-nim-mummy):
