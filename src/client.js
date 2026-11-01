@@ -12,7 +12,8 @@ const hints = {
 };
 
 const compilers = [["c", "nim c"], ["ic", "nim ic"]];
-const strategies = [["hcr", "hot reload"], ["rerun", "re-run all"]];
+const strategies = [["rerun", "re-run all"], ["hcr", "hot reload"]];
+const selectedMark = "🦎";
 // hot reload with nim ic does not link on Nim 2.4 (cicak experiments/hcr-ic)
 const unsupported = (compiler, strategy) => compiler === "ic" && strategy === "hcr";
 const hcrIcNote = `Hot reload with nim ic is not available: Nim 2.4's incremental backend does not support hot code reloading (<a href="https://github.com/pietroppeter/cicak/tree/main/experiments/hcr-ic">why</a>).`;
@@ -25,7 +26,7 @@ function renderMode() {
       const on = state.compiler === c && state.strategy === st;
       html += unsupported(c, st)
         ? `<button class="sq na" disabled role="radio" aria-checked="false" title="${cname}, ${sname}: not supported yet" aria-label="${cname}, ${sname}: not supported yet">n/a</button>`
-        : `<button class="sq" data-mode="${c}:${st}" role="radio" aria-checked="${on}" title="${cname}, ${sname}" aria-label="${cname}, ${sname}">${on ? "✕" : ""}</button>`;
+        : `<button class="sq" data-mode="${c}:${st}" role="radio" aria-checked="${on}" title="${cname}, ${sname}" aria-label="${cname}, ${sname}">${on ? selectedMark : ""}</button>`;
     }
   }
   $("mode").innerHTML = html;
