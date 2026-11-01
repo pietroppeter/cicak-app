@@ -101,7 +101,7 @@ function render() {
     : `<div class="cell next">
         <div class="head"><span class="title">${esc(rest[0].title)}</span><span class="label">next: cell ${t.added.length + 1}</span></div>
         <pre class="code"><code>${highlight(rest[0].code)}</code></pre>
-        <div class="row">${restartBtn}<button class="btn primary" data-add="${esc(rest[0].id)}">Add cell</button></div>
+        <div class="row"><button class="btn primary" data-add="${esc(rest[0].id)}">Add cell</button>${restartBtn}</div>
       </div>` + (rest.length > 1 ? `<p class="later">then: ${rest.slice(1).map((c) => esc(c.title)).join(" · ")}</p>` : "");
 
   $("busy").innerHTML = state.busy ? `<p class="busy">${esc(state.busy)}</p>` : "";
