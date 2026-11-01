@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>cicak playground</title>
+<meta name="description" content="Add predefined cells to a running Nim process, with hot code reloading or re-run, nim c or nim ic.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🦎</text></svg>">
+<style>
+/* The cicak theme (docs/theme.nim in pietroppeter/cicak): the nanuq theme with a green
+   palette, light and dark. The first block is copied as is; keep it in sync. */
+:root {
+  --ground: #f2f7f3; --leaf: #ffffff; --ink: #13261b; --mute: #5a6f62; --rule: #d2e2d7;
+  --moss: #1e7a4c; --out-bg: #e6f0e9;
+  --kw: #8a3b8f; --str: #2c6e86; --num: #a55310; --com: #7c8c82; --fn: #1e7a4c;
+  --err: #b3261e;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Literata", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0d1711; --leaf: #121f17; --ink: #e2efe6; --mute: #93ab9b; --rule: #21362a;
+    --moss: #5fd39a; --out-bg: #0a130d;
+    --kw: #d79be0; --str: #7fc6dd; --num: #f0a868; --com: #6d8576; --fn: #5fd39a;
+    --err: #ff8a80;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink); font: 17px/1.65 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body > header, body > main, body > footer { max-width: 46rem; margin: 0 auto; }
+body > header { padding-block: 3rem 0; }
+body > footer { padding-block: 1rem 4rem; }
+.mast { display: grid; gap: .6rem; padding-bottom: 2rem; border-bottom: 1px solid var(--rule); margin-bottom: 1rem; }
+.eyebrow { font: 600 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--moss); }
+.mast h1 { font: 700 clamp(2.4rem, 7vw, 3.6rem)/1.02 var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.mast h1 em { font-style: normal; color: var(--moss); }
+.epigraph { font-style: italic; color: var(--mute); margin: 0; }
+.meta { font: .8rem/1.4 var(--mono); color: var(--mute); }
+h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; }
+h2 { font-size: 1.7rem; font-weight: 700; margin: 2.8rem 0 .6rem; letter-spacing: -.01em; }
+p, li { max-width: 65ch; }
+a { color: var(--moss); text-underline-offset: 2px; }
+code, pre { font-family: var(--mono); }
+pre, pre *, code { font-variant-ligatures: none !important; }
+pre { margin: 0; overflow-x: auto; }
+.crumbs { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font: .78rem/1.4 var(--mono); }
+.crumbs a { color: var(--moss); text-decoration: none; }
+.hljs-keyword, .hljs-meta, .hljs-built_in { color: var(--kw); }
+.hljs-string, .hljs-char { color: var(--str); }
+.hljs-number, .hljs-literal { color: var(--num); }
+.hljs-comment { color: var(--com); font-style: italic; }
+.hljs-title, .hljs-function, .hljs-type { color: var(--fn); }
+footer .foot { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); font: .8rem/1.5 var(--mono); color: var(--mute); }
+
+/* Playground: a notebook cell is a code block over an output block, as in the dev log. */
+.label { font: 600 .65rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.controls { display: grid; gap: .9rem; margin: 1.5rem 0 .5rem; }
+.control { display: grid; gap: .35rem; }
+.seg { display: flex; flex-wrap: wrap; gap: .4rem; }
+.seg button, .btn {
+  font: 600 .8rem/1 var(--mono); padding: .6rem .8rem; min-height: 2.5rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--rule); background: var(--leaf); color: var(--ink);
+}
+.seg button[aria-pressed="true"] { background: var(--moss); border-color: var(--moss); color: var(--ground); }
+.btn.primary { background: var(--moss); border-color: var(--moss); color: var(--ground); }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible { outline: 2px solid var(--moss); outline-offset: 2px; }
+.hint { font: .78rem/1.5 var(--mono); color: var(--mute); margin: 0; }
+.about { color: var(--mute); margin: .3rem 0 0; }
+.cell { margin: 1.2rem 0 0; }
+.cell .head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .3rem; }
+.cell .title { font: 700 1rem/1.3 var(--display); }
+.code { background: var(--leaf); border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1rem; font-size: .85rem; line-height: 1.55; }
+.cell.done .code { border-radius: 6px 6px 0 0; }
+.out { background: var(--out-bg); border: 1px solid var(--rule); border-top: none; border-radius: 0 0 6px 6px;
+  padding: .8rem 1rem; font: .8rem/1.4 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.out.err { color: var(--err); }
+.timing { font: .72rem/1.4 var(--mono); color: var(--mute); margin-top: .35rem; font-variant-numeric: tabular-nums; }
+.timing b { color: var(--moss); font-weight: 600; }
+.next .code { border-style: dashed; }
+.next .row { display: flex; justify-content: flex-end; margin-top: .45rem; }
+.empty { color: var(--mute); font-style: italic; }
+.busy { font: .8rem/1.4 var(--mono); color: var(--moss); margin: 1rem 0; }
+.busy::before { content: "● "; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+details.log { margin-top: 2.5rem; }
+details.log summary { cursor: pointer; width: max-content; font: 600 .75rem/1 var(--mono); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--moss); padding: .6rem .8rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--leaf); }
+.log ol { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .6rem; }
+.log li { max-width: none; border-left: 3px solid var(--moss); padding-left: .7rem; font: .75rem/1.45 var(--mono); }
+.log li.bad { border-color: var(--err); }
+.log .cmd { color: var(--mute); word-break: break-all; }
+.log pre { font-size: .72rem; background: var(--leaf); border: 1px solid var(--rule); border-radius: 4px; padding: .5rem .6rem; margin-top: .3rem; white-space: pre-wrap; }
+</style>
+</head><body>
+<header class="mast">
+  <nav class="crumbs"><a href="https://pietroppeter.github.io/cicak/">cicak dev log ↗</a><a href="https://github.com/pietroppeter/cicak-app">source on GitHub ↗</a></nav>
+  <span class="eyebrow">cicak 🦎 playground</span>
+  <h1>Add <em>cells</em> to a running Nim process</h1>
+  <p class="epigraph">Pick cells from a notebook, one at a time. Each cell becomes a Nim module; see how long it takes and what runs.</p>
+  <span class="meta" id="meta">loading…</span>
+</header>
+<main>
+  <section class="controls">
+    <div class="control"><span class="label">Notebook</span><div class="seg" id="notebooks"></div></div>
+    <div class="control"><span class="label">Compiler</span><div class="seg" id="compiler">
+      <button data-v="c" aria-pressed="true">nim c</button><button data-v="ic" aria-pressed="false">nim ic</button></div></div>
+    <div class="control"><span class="label">Run cells by</span><div class="seg" id="strategy">
+      <button data-v="hcr" aria-pressed="true">hot reload</button><button data-v="rerun" aria-pressed="false">re-run all</button></div>
+      <p class="hint" id="strategy-hint"></p></div>
+    <div class="control"><div class="seg"><button class="btn" id="restart">Restart</button></div></div>
+  </section>
+  <p class="about" id="about"></p>
+  <h2>Session</h2>
+  <div id="session"><p class="empty">No cells yet. Add one below.</p></div>
+  <div id="busy"></div>
+  <h2>Cells to add</h2>
+  <div id="next"></div>
+  <details class="log" id="log"><summary>Log</summary><ol id="log-list"></ol></details>
+</main>
+<footer><div class="foot">Part of <a href="https://github.com/pietroppeter/cicak">cicak</a>, a REPL for Nim.
+The cells are predefined in <a href="https://github.com/pietroppeter/cicak-app/tree/main/notebooks">notebooks/</a>; nothing you type is run.</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/nim.min.js"></script>
+<script>/*CLIENT_JS*/</script>
+</body></html>
