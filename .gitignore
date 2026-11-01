@@ -4,3 +4,5 @@ nimcache/
 /work/
 *.out
 /deps/
+node_modules/
+snapshot-*.html

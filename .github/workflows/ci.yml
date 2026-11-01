@@ -47,6 +47,18 @@ jobs:
           WORK_DIR="$RUNNER_TEMP/work" ./cicak_app > app.log 2>&1 &
           sleep 2
           python3 tests/e2e.py
+      - name: Snapshot the page (hot reload, every notebook)
+        if: always()
+        run: |
+          npm i --no-save playwright@1 && npx playwright install chromium
+          for nb in 1 2 3; do node tests/snapshot.js http://localhost:8000 "snapshot-$nb-hcr.html" $nb c hcr; done
+          node tests/snapshot.js http://localhost:8000 snapshot-2-rerun.html 2 c rerun
+          node tests/snapshot.js http://localhost:8000 snapshot-1-ic-hcr.html 1 ic hcr
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snapshots
+          path: snapshot-*.html
       - if: always()
         run: cat app.log
 
