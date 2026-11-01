@@ -74,7 +74,18 @@ var
 initLock(lock)
 
 proc nimLib(): string =
-  getEnv("NIM_LIB", findExe(nimExe).parentDir.parentDir / "lib")
+  ## Nim's lib directory: $NIM_LIB, next to the (symlink-resolved) compiler, or
+  ## from `nim dump`, whose search paths include `<lib>/pure`.
+  if existsEnv("NIM_LIB"): return getEnv("NIM_LIB")
+  var exe = findExe(nimExe)
+  try: exe = expandFilename(exe)
+  except OSError: discard
+  result = exe.parentDir.parentDir / "lib"
+  if fileExists(result / "system.nim"): return
+  try:
+    for line in execCmdEx(nimExe & " dump --hints:off").output.splitLines:
+      if line.endsWith("/lib/pure"): return line.parentDir
+  except OSError: discard
 
 proc rtlDir(): string = getEnv("RTL_DIR", workDir / "rtl")
 
