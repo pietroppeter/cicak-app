@@ -11,6 +11,8 @@ const hints = {
   rerun: "The program importing every cell so far is compiled and run from scratch, as INim does: every cell runs again.",
 };
 
+const hcrIcNote = "Not with nim ic yet: Nim 2.4's incremental backend does not support hot code reloading (cicak experiments/hcr-ic), so pick nim c or re-run all.";
+
 const state = {
   session: sessionStorage.getItem("cicak-session") || newId(),
   notebooks: [], notebook: null, compiler: "c", strategy: "hcr",
@@ -61,7 +63,8 @@ function render() {
   $("about").textContent = nb ? nb.about : "";
   setSeg("compiler", state.compiler);
   setSeg("strategy", state.strategy);
-  $("strategy-hint").textContent = hints[state.strategy];
+  $("strategy-hint").textContent = hints[state.strategy] +
+    (state.strategy === "hcr" && state.compiler === "ic" ? " " + hcrIcNote : "");
 
   $("session").innerHTML = state.added.length === 0 ? `<p class="empty">No cells yet. Add one below.</p>` :
     state.added.map(({ cell, result }, i) => `

@@ -8,7 +8,9 @@
 ## - `rerun`: the program importing all cells is recompiled and run from
 ##   scratch, as INim does. Every cell's top-level code runs again.
 ##
-## Either way the compiler is `nim c` or `nim ic` (incremental compilation).
+## Either way the compiler is `nim c` or `nim ic` (incremental compilation),
+## except that hot reload with `nim ic` is refused up front: it cannot link on
+## Nim 2.4 (see `HcrIcNotes`). Set `CICAK_TRY_HCR_IC=1` to try it anyway.
 ## Every command is recorded as a `Step` with its duration and output, which the
 ## page shows as the log.
 ##
@@ -64,6 +66,9 @@ while stdin.readLine(line):
   CompileTimeoutS = 180
   RunTimeoutS = 20
   MaxLog = 20_000
+  HcrIcNotes* = "https://github.com/pietroppeter/cicak/tree/main/experiments/hcr-ic"
+  HcrIcError* = "hot reload does not work with nim ic yet: Nim 2.4's incremental " &
+    "backend does not support hot code reloading, the build cannot link (" & HcrIcNotes & ")"
 
 var
   workDir* = getEnv("WORK_DIR", getTempDir() / "cicak-app")
@@ -194,6 +199,7 @@ proc addCell*(s: Session, cellId, code: string): AddResult =
     output = r.log
     if not r.ok: fail "the program failed"
   of stHcr:
+    if s.compiler == ccIc and getEnv("CICAK_TRY_HCR_IC").len == 0: fail HcrIcError
     if not ensureRtl(result.steps): fail "could not build the hot code reloading runtime"
     if s.host == nil:
       let c = run("compile host", s.compileCmd("host.nim", "host"), s.dir, CompileTimeoutS)

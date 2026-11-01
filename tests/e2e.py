@@ -1,8 +1,10 @@
 """End-to-end check of a running playground: python3 tests/e2e.py [base-url]
 
 Adds the "Hot reloading basics" cells in every compiler/strategy combination and
-checks what ran. Hot reloading with `nim ic` has never been tried (see the cicak
-backlog), so its result is reported but does not fail the run unless --strict.
+checks what ran. Hot reloading with `nim ic` does not link on Nim 2.4 (cicak
+experiments/hcr-ic), so the server refuses it: the check is that it says so.
+With --strict (and the server started with CICAK_TRY_HCR_IC=1) it is tried
+like the other modes.
 """
 import json, sys, time, urllib.request
 
@@ -39,9 +41,17 @@ assert any(nb["id"] == NB for nb in info["notebooks"]), "notebook missing"
 
 for compiler in ["c", "ic"]:
     for strategy in ["hcr", "rerun"]:
-        optional = compiler == "ic" and strategy == "hcr" and not STRICT
         session = f"e2e-{compiler}-{strategy}-{int(time.time())}"
-        print(f"\nnim {compiler}, {strategy}{' (experimental)' if optional else ''}")
+        if compiler == "ic" and strategy == "hcr" and not STRICT:
+            print(f"\nnim {compiler}, {strategy} (unsupported)")
+            res = call("/api/add", {"session": session, "notebook": NB, "cell": f"{NB}/1",
+                                    "compiler": compiler, "strategy": strategy})
+            if not check(not res["ok"] and "nim ic" in res["error"] and not res["steps"],
+                         f"refused at once: {res['error']}"):
+                failures.append(f"nim {compiler} {strategy} refusal")
+            call("/api/restart", {"session": session})
+            continue
+        print(f"\nnim {compiler}, {strategy}")
         good = True
         outputs = []
         for i in range(1, 5):
@@ -62,7 +72,7 @@ for compiler in ["c", "ic"]:
             else:
                 good &= check(last.startswith("x = 41"), "re-run runs every cell again")
         call("/api/restart", {"session": session})
-        if not good and not optional:
+        if not good:
             failures.append(f"nim {compiler} {strategy}")
 
 print("\ncompile errors are reported and the cell is not added")

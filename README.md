@@ -14,6 +14,11 @@ then add its cells one at a time, choosing:
   top-level code runs) or *re-run all* (the program importing every cell is compiled
   and run from scratch, as INim does)
 
+Hot reload with `nim ic` is refused with an explanation: Nim 2.4's incremental
+backend does not support hot code reloading, so the build cannot link (details in
+cicak's [experiments/hcr-ic](https://github.com/pietroppeter/cicak/tree/main/experiments/hcr-ic)).
+Start the server with `CICAK_TRY_HCR_IC=1` to try it anyway, e.g. on a newer Nim.
+
 Each added cell shows its output and the time of each step (compile, reload or run).
 The **log** lists every command with its duration and output. **Restart** starts over;
 changing notebook, compiler or strategy restarts too.
@@ -116,6 +121,6 @@ throwaway. The image keeps Nim and gcc, since cells are compiled at run time.
 ## CI
 
 `e2e` builds Nim 2.4 from source (cached), builds the app and runs `tests/e2e.py`:
-the "Hot reloading basics" notebook in all four modes. Hot reload with `nim ic` has
-never been tried, so it is reported but doesn't fail CI yet. `docker` builds the image
+the "Hot reloading basics" notebook in every mode, and checks that hot reload with
+`nim ic` is refused (`--strict` with `CICAK_TRY_HCR_IC=1` tries it for real). `docker` builds the image
 and runs the same test against the container.
