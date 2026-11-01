@@ -10,8 +10,7 @@ const [base = "http://localhost:8000", out = "snapshot.html", nb = "1", compiler
   await page.goto(base);
   await page.waitForSelector("[data-add]");
   await page.click(`#notebooks button:nth-child(${nb})`);
-  await page.click(`#compiler button[data-v=${compiler}]`);
-  await page.click(`#strategy button[data-v=${strategy}]`);
+  await page.click(`#mode button[data-mode="${compiler}:${strategy}"]`);
   while (await page.$("[data-add]")) {
     const before = await page.$$eval(".cell.done", (e) => e.length);
     await page.click("[data-add]");

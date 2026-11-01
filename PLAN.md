@@ -12,8 +12,9 @@ the REPL itself rather than this app.
 ## Next
 
 1. **Deploy** at cicak.pietroppeter.xyz (Disco project `cicak`, from this repo).
-2. **Find out what hot reload + `nim ic` does** (cicak backlog: "HCR together with IC").
-   CI reports it; the page shows the error if it fails.
+2. ~~**Find out what hot reload + `nim ic` does**~~: it cannot link on Nim 2.4, the IC
+   backend does not support HCR (cicak `experiments/hcr-ic`). The app refuses it up
+   front; revisit when Nim changes (`CICAK_TRY_HCR_IC=1`).
 3. **Timings at a glance**: a small summary per session (first compile, mean per
    cell) and a way to compare modes side by side, e.g. run a whole notebook in all
    four modes and show a table. That is the data for the dev log.
