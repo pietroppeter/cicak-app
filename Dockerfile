@@ -21,11 +21,14 @@ RUN git clone --depth 1 -b "$NIM_REF" https://github.com/nim-lang/Nim "$NIM_DIR"
  && ls bin
 ENV PATH=/opt/nim/bin:$PATH
 
-# the two runtime libraries hot code reloading needs, built once here
+# The two runtime libraries hot code reloading needs, built once here. Nim has no
+# HCR jump table for arm64 Linux (e.g. Docker on Apple Silicon): there the build
+# fails, the image is built anyway, and the page shows that error for hot reload.
 ENV RTL_DIR=/opt/nim-rtl
 RUN mkdir -p "$RTL_DIR" && cd "$RTL_DIR" \
- && nim c --hints:off --app:lib -d:createNimRtl --out:libnimrtl.so "$NIM_DIR/lib/nimrtl.nim" \
- && nim c --hints:off --app:lib -d:createNimHcr --out:libnimhcr.so "$NIM_DIR/lib/nimhcr.nim" \
+ && { nim c --hints:off --warnings:off --app:lib -d:createNimRtl --out:libnimrtl.so "$NIM_DIR/lib/nimrtl.nim" \
+   && nim c --hints:off --warnings:off --app:lib -d:createNimHcr --out:libnimhcr.so "$NIM_DIR/lib/nimhcr.nim" \
+   || { echo "hot code reloading is not available on $(uname -m)"; rm -f libnimrtl.so libnimhcr.so; }; } \
  && rm -rf ~/.cache/nim
 
 WORKDIR /app
@@ -35,7 +38,7 @@ COPY src ./src
 RUN nim c -d:release --hints:off -o:/app/cicak_app src/cicak_app.nim
 COPY notebooks ./notebooks
 
-RUN useradd -m -u 1000 app && mkdir -p /work && chown app:app /work
+RUN useradd -m -u 1000 app && mkdir -p /work && chown app:app /work "$RTL_DIR"
 USER app
 ENV PORT=8000 WORK_DIR=/work NOTEBOOKS_DIR=/app/notebooks
 EXPOSE 8000
