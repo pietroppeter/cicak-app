@@ -99,7 +99,7 @@ function render() {
       </div>`).join("");
 
   $("busy").innerHTML = state.busy ? `<p class="busy">${esc(state.busy)}</p>` : "";
-  for (const b of document.querySelectorAll(".controls button:not(.na)")) b.disabled = !!state.busy;
+  for (const b of document.querySelectorAll(".controls button:not(.na), #notebooks button")) b.disabled = !!state.busy;
 
   $("log-list").innerHTML = state.log.map((e) => e.note ? `<li><span class="label">${esc(e.note)}</span></li>` :
     `<li class="${e.ok ? "" : "bad"}"><b>${esc(e.cell)}</b> · ${esc(e.name)} · ${secs(e.ms)} ${e.ok ? "" : "· failed"}

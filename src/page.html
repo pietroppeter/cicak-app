@@ -125,17 +125,17 @@ details.log summary { cursor: pointer; width: max-content; font: 600 .75rem/1 va
 </header>
 <main>
   <section class="controls">
-    <div class="control"><span class="label">Notebook</span><div class="seg" id="notebooks"></div></div>
     <div class="control"><span class="label">Mode</span>
       <div class="matrix" id="mode" role="radiogroup" aria-label="compiler and how cells run"></div>
       <p class="hint" id="strategy-hint"></p></div>
     <div class="control"><div class="seg"><button class="btn" id="restart">Restart</button></div></div>
   </section>
-  <p class="about" id="about"></p>
   <h2>Session</h2>
   <div id="session"><p class="empty">No cells yet. Add one below.</p></div>
   <div id="busy"></div>
   <h2>Cells to add</h2>
+  <div class="control"><span class="label">Notebook</span><div class="seg" id="notebooks"></div></div>
+  <p class="about" id="about"></p>
   <div id="next"></div>
   <details class="log" id="log"><summary>Log</summary><ol id="log-list"></ol></details>
 </main>
