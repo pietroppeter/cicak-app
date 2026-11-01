@@ -11,7 +11,25 @@ const hints = {
   rerun: "The program importing every cell so far is compiled and run from scratch, as INim does: every cell runs again.",
 };
 
-const hcrIcNote = "Not with nim ic yet: Nim 2.4's incremental backend does not support hot code reloading (cicak experiments/hcr-ic), so pick nim c or re-run all.";
+const compilers = [["c", "nim c"], ["ic", "nim ic"]];
+const strategies = [["hcr", "hot reload"], ["rerun", "re-run all"]];
+// hot reload with nim ic does not link on Nim 2.4 (cicak experiments/hcr-ic)
+const unsupported = (compiler, strategy) => compiler === "ic" && strategy === "hcr";
+const hcrIcNote = `Hot reload with nim ic is not available: Nim 2.4's incremental backend does not support hot code reloading (<a href="https://github.com/pietroppeter/cicak/tree/main/experiments/hcr-ic">why</a>).`;
+
+function renderMode() {
+  let html = `<span></span>` + strategies.map(([, name]) => `<span class="col">${name}</span>`).join("");
+  for (const [c, cname] of compilers) {
+    html += `<span class="row">${cname}</span>`;
+    for (const [st, sname] of strategies) {
+      const on = state.compiler === c && state.strategy === st;
+      html += unsupported(c, st)
+        ? `<button class="sq na" disabled role="radio" aria-checked="false" title="${cname}, ${sname}: not supported yet" aria-label="${cname}, ${sname}: not supported yet">n/a</button>`
+        : `<button class="sq" data-mode="${c}:${st}" role="radio" aria-checked="${on}" title="${cname}, ${sname}" aria-label="${cname}, ${sname}">${on ? "✕" : ""}</button>`;
+    }
+  }
+  $("mode").innerHTML = html;
+}
 
 const state = {
   session: sessionStorage.getItem("cicak-session") || newId(),
@@ -37,10 +55,6 @@ async function post(path, body) {
   return r.json();
 }
 
-function setSeg(id, value) {
-  for (const b of $(id).querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.v === value));
-}
-
 async function restart(note) {
   const old = state.session;
   state.added = [];
@@ -61,10 +75,8 @@ function render() {
   $("notebooks").innerHTML = state.notebooks.map((n) =>
     `<button data-v="${esc(n.id)}" aria-pressed="${nb && n.id === nb.id}">${esc(n.title)}</button>`).join("");
   $("about").textContent = nb ? nb.about : "";
-  setSeg("compiler", state.compiler);
-  setSeg("strategy", state.strategy);
-  $("strategy-hint").textContent = hints[state.strategy] +
-    (state.strategy === "hcr" && state.compiler === "ic" ? " " + hcrIcNote : "");
+  renderMode();
+  $("strategy-hint").innerHTML = esc(hints[state.strategy]) + (state.compiler === "ic" ? " " + hcrIcNote : "");
 
   $("session").innerHTML = state.added.length === 0 ? `<p class="empty">No cells yet. Add one below.</p>` :
     state.added.map(({ cell, result }, i) => `
@@ -86,7 +98,7 @@ function render() {
       </div>`).join("");
 
   $("busy").innerHTML = state.busy ? `<p class="busy">${esc(state.busy)}</p>` : "";
-  for (const b of document.querySelectorAll(".controls button")) b.disabled = !!state.busy;
+  for (const b of document.querySelectorAll(".controls button:not(.na)")) b.disabled = !!state.busy;
 
   $("log-list").innerHTML = state.log.map((e) => e.note ? `<li><span class="label">${esc(e.note)}</span></li>` :
     `<li class="${e.ok ? "" : "bad"}"><b>${esc(e.cell)}</b> · ${esc(e.name)} · ${secs(e.ms)} ${e.ok ? "" : "· failed"}
@@ -119,13 +131,17 @@ document.addEventListener("click", (ev) => {
   const b = ev.target.closest("button");
   if (!b || b.disabled) return;
   if (b.dataset.add) return addCell(b.dataset.add);
+  if (b.dataset.mode) {
+    const [c, st] = b.dataset.mode.split(":");
+    if (c === state.compiler && st === state.strategy) return;
+    state.compiler = c; state.strategy = st;
+    return restart(`mode: nim ${c}, ${st === "hcr" ? "hot reload" : "re-run all"}`);
+  }
   const seg = b.parentElement.id;
   if (seg === "notebooks") {
     state.notebook = state.notebooks.find((n) => n.id === b.dataset.v);
     return restart(`notebook: ${state.notebook.title}`);
   }
-  if (seg === "compiler" && state.compiler !== b.dataset.v) { state.compiler = b.dataset.v; return restart(`compiler: nim ${state.compiler}`); }
-  if (seg === "strategy" && state.strategy !== b.dataset.v) { state.strategy = b.dataset.v; return restart(`strategy: ${state.strategy}`); }
   if (b.id === "restart") return restart("restarted");
 });
 

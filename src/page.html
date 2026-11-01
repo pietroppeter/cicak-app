@@ -74,6 +74,20 @@ footer .foot { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--
 .btn.primary { background: var(--moss); border-color: var(--moss); color: var(--ground); }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible { outline: 2px solid var(--moss); outline-offset: 2px; }
+/* Mode: compilers on rows, strategies on columns; the selected square has an x. */
+.matrix { display: grid; grid-template-columns: max-content repeat(2, 5.5rem); gap: .4rem .5rem; align-items: center; justify-items: center; }
+.matrix .col, .matrix .row { font: 600 .75rem/1.2 var(--mono); color: var(--ink); }
+.matrix .col { align-self: end; text-align: center; }
+.matrix .row { justify-self: end; padding-right: .3rem; }
+.matrix button.sq {
+  width: 2.75rem; height: 2.75rem; padding: 0; border-radius: 6px; cursor: pointer;
+  border: 1.5px solid var(--rule); background: var(--leaf); color: var(--ground);
+  font: 700 1.3rem/1 var(--mono); display: grid; place-items: center;
+}
+.matrix button.sq:hover:not(:disabled) { border-color: var(--moss); }
+.matrix button.sq[aria-checked="true"] { background: var(--moss); border-color: var(--moss); }
+.matrix button.sq.na { cursor: not-allowed; opacity: 1; color: var(--mute); font-size: .6rem; font-weight: 600;
+  background: repeating-linear-gradient(135deg, var(--leaf) 0 6px, var(--rule) 6px 7px); }
 .hint { font: .78rem/1.5 var(--mono); color: var(--mute); margin: 0; }
 .about { color: var(--mute); margin: .3rem 0 0; }
 .cell { margin: 1.2rem 0 0; }
@@ -112,10 +126,8 @@ details.log summary { cursor: pointer; width: max-content; font: 600 .75rem/1 va
 <main>
   <section class="controls">
     <div class="control"><span class="label">Notebook</span><div class="seg" id="notebooks"></div></div>
-    <div class="control"><span class="label">Compiler</span><div class="seg" id="compiler">
-      <button data-v="c" aria-pressed="true">nim c</button><button data-v="ic" aria-pressed="false">nim ic</button></div></div>
-    <div class="control"><span class="label">Run cells by</span><div class="seg" id="strategy">
-      <button data-v="hcr" aria-pressed="true">hot reload</button><button data-v="rerun" aria-pressed="false">re-run all</button></div>
+    <div class="control"><span class="label">Mode</span>
+      <div class="matrix" id="mode" role="radiogroup" aria-label="compiler and how cells run"></div>
       <p class="hint" id="strategy-hint"></p></div>
     <div class="control"><div class="seg"><button class="btn" id="restart">Restart</button></div></div>
   </section>
